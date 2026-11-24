@@ -1,0 +1,11 @@
+desktop/data/
+desktop/logs/
+desktop/venv/
+desktop/__pycache__/
+desktop/tests/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+dist/
+.DS_Store
+Thumbs.db

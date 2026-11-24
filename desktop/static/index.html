@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>虚拟相机同步工作台 · VCam Sync Studio</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">VC</div>
+      <div>
+        <div class="brand-title">虚拟相机同步工作台 <span class="badge-rev" id="revBadge">v1</span></div>
+        <div class="brand-sub">电脑端顺序排期 · iOS 16.2 巨魔 / 越狱相机输出同步</div>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <div class="ws-pill" id="uiWsPill" title="工作台实时通道状态">
+        <span class="dot"></span>
+        <span id="uiWsText">连接中</span>
+      </div>
+
+      <button type="button" class="toggle-chip active" id="masterEnableBtn" title="一键启用或暂停手机端虚拟相机替换">
+        <span class="chip-dot"></span>
+        <span id="masterEnableText">虚拟相机：已启用</span>
+      </button>
+
+      <button type="button" class="btn btn-primary" id="pushSyncBtn">立即推送到手机</button>
+      <button type="button" class="btn btn-secondary" id="guideBtn">iOS 安装指南</button>
+      <button type="button" class="btn btn-ghost-danger" id="shutdownBtn">退出服务</button>
+    </div>
+  </header>
+
+  <main class="studio-grid">
+    <!-- Left Column: Products & Folder Import -->
+    <aside class="panel left-panel">
+      <div class="panel-head">
+        <h2>商品任务包</h2>
+        <button type="button" class="btn btn-sm btn-primary" id="newProductBtn">+ 新建商品</button>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="productSearchInput" placeholder="筛选商品名称..." />
+      </div>
+
+      <div class="product-list" id="productList"></div>
+
+      <section class="import-box">
+        <div class="import-title">从本地文件夹批量导入</div>
+        <p class="import-hint">支持粘贴任意本地文件夹路径（如主图工作台导出目录），按文件名自然顺序导入图片和视频。</p>
+        <input type="text" id="folderPathInput" placeholder="例如：C:\Users\...\outputs\商品A" />
+        <label class="checkbox-row">
+          <input type="checkbox" id="folderRecursiveChk" />
+          <span>包含子文件夹内的素材</span>
+        </label>
+        <button type="button" class="btn btn-secondary btn-full" id="importFolderBtn">一键导入到当前商品</button>
+      </section>
+    </aside>
+
+    <!-- Center Column: Ordered Photo & Video Queues + Camera Output Options -->
+    <section class="center-column">
+      <div class="active-banner" id="activeBanner">
+        <div>
+          <div class="active-kicker">当前正在同步到手机的商品包</div>
+          <div class="active-title-row">
+            <h1 id="activeProductTitle">默认商品包</h1>
+            <button type="button" class="btn-inline" id="renameActiveBtn">编辑名称</button>
+          </div>
+          <div class="active-summary" id="activeSummary">等待加载...</div>
+        </div>
+        <div class="banner-upload">
+          <input type="file" id="mediaFileInput" multiple accept="image/*,video/mp4,video/quicktime,.mov,.mp4,.m4v" hidden />
+          <button type="button" class="btn btn-primary" id="uploadAnyBtn">+ 批量上传图片 / 视频</button>
+        </div>
+      </div>
+
+      <!-- Photo Queue -->
+      <section class="panel queue-section">
+        <div class="section-head">
+          <div>
+            <h3>1. 点击拍摄 · 图片顺序队列 <span class="count-pill" id="photoCountPill">0 张</span></h3>
+            <p class="section-sub">手机点击拍摄时按序号从上到下/从左到右输出；拖拽卡片可调整顺序，点击「设为下一张」可随时跳转。</p>
+          </div>
+          <div class="queue-controls">
+            <button type="button" class="btn btn-sm btn-secondary" id="prevPhotoBtn">上一张</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="nextPhotoBtn">下一张</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="resetPhotoBtn">重置第 1 张</button>
+            <label class="switch-pill">
+              <input type="checkbox" id="loopPhotosChk" />
+              <span>拍完循环</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="dropzone" id="photoDropzone">
+          <div class="dropzone-text">将商品图片或视频直接拖拽到此处上传，或 <button type="button" class="link-btn" id="pickPhotosBtn">点击选择图片</button></div>
+        </div>
+
+        <div class="media-grid" id="photoGrid"></div>
+      </section>
+
+      <!-- Video Queue -->
+      <section class="panel queue-section">
+        <div class="section-head">
+          <div>
+            <h3>2. 长按录制 · 视频替换队列 <span class="count-pill" id="videoCountPill">0 个</span></h3>
+            <p class="section-sub">手机端触发长按录制（或视频录制）时，按当前视频输出替换拍摄结果。</p>
+          </div>
+          <div class="queue-controls">
+            <button type="button" class="btn btn-sm btn-secondary" id="prevVideoBtn">上一个</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="nextVideoBtn">下一个</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="pickVideosBtn">+ 上传视频</button>
+            <label class="switch-pill">
+              <input type="checkbox" id="loopVideosChk" />
+              <span>循环视频</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="video-mode-row">
+          <label for="videoModeSelect">长按录制替换策略：</label>
+          <select id="videoModeSelect">
+            <option value="full">完整替换原视频（推荐，画质无损）</option>
+            <option value="trim">按长按实际录制时长截取替换</option>
+            <option value="frames">实时逐帧注入预览与编码流</option>
+          </select>
+        </div>
+
+        <div class="dropzone compact" id="videoDropzone">
+          <div class="dropzone-text">拖拽 <code>.mp4 / .mov / .m4v</code> 视频到此处，或点击上方「+ 上传视频」</div>
+        </div>
+
+        <div class="media-grid video-grid" id="videoGrid"></div>
+      </section>
+
+      <!-- Output Settings -->
+      <section class="panel settings-section">
+        <div class="section-head">
+          <div>
+            <h3>3. 相机画面输出微调</h3>
+            <p class="section-sub">如目标 App 画面方向颠倒或比例裁切不符合预期，可在此实时调整并立即同步到手机。</p>
+          </div>
+        </div>
+        <div class="settings-grid">
+          <label class="field-group">
+            <span>画面填充方式</span>
+            <select id="fillModeSelect">
+              <option value="fill">居中铺满（Aspect Fill，推荐）</option>
+              <option value="fit">完整显示（Aspect Fit，留黑边）</option>
+            </select>
+          </label>
+          <label class="field-group">
+            <span>旋转校正角度</span>
+            <select id="rotationSelect">
+              <option value="0">0°（默认）</option>
+              <option value="90">顺时针 90°</option>
+              <option value="180">180°</option>
+              <option value="270">顺时针 270°</option>
+            </select>
+          </label>
+          <label class="field-toggle">
+            <input type="checkbox" id="mirrorChk" />
+            <div>
+              <div class="toggle-title">水平镜像翻转</div>
+              <div class="toggle-desc">前置摄像头自拍画面反了可开启</div>
+            </div>
+          </label>
+          <label class="field-toggle">
+            <input type="checkbox" id="showHudChk" />
+            <div>
+              <div class="toggle-title">手机端悬浮状态条</div>
+              <div class="toggle-desc">在拍照页显示当前第几张及快捷切换按钮</div>
+            </div>
+          </label>
+        </div>
+      </section>
+    </section>
+
+    <!-- Right Column: LAN Pairing, Connected iPhone, Live Events -->
+    <aside class="panel right-panel">
+      <div class="card-block">
+        <div class="panel-head">
+          <h2>局域网 Wi-Fi 配对</h2>
+          <button type="button" class="btn btn-sm btn-secondary" id="regenTokenBtn">刷新密钥</button>
+        </div>
+
+        <label class="field-group">
+          <span>本机广播网卡 IP</span>
+          <select id="hostSelect"></select>
+        </label>
+
+        <div class="qr-card">
+          <div class="qr-svg-wrap" id="qrSvgWrap">加载二维码...</div>
+          <div class="qr-meta">
+            <div class="discovery-badge" id="discoveryBadge">UDP 自动发现：检测中...</div>
+            <div class="pair-url-box">
+              <input type="text" id="pairUrlInput" readonly />
+              <button type="button" class="btn btn-sm btn-secondary" id="copyPairUrlBtn">复制</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-block">
+        <div class="panel-head">
+          <h2>已连接手机</h2>
+          <span class="count-pill" id="deviceCountPill">0 台</span>
+        </div>
+        <div class="device-list" id="deviceList">
+          <div class="empty-hint">暂无手机连接。请在 iPhone 打开 <strong>VCamSync</strong> 扫码或点击「搜索局域网电脑」。</div>
+        </div>
+      </div>
+
+      <div class="card-block events-block">
+        <div class="panel-head">
+          <h2>实时拍摄与同步日志</h2>
+        </div>
+        <div class="event-list" id="eventList"></div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Create / Rename Product Modal -->
+  <div class="modal-backdrop hidden" id="productModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="productModalTitle">新建商品任务包</h3>
+        <button type="button" class="close-btn" id="closeProductModalBtn">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="field-group">
+          <span>商品名称</span>
+          <input type="text" id="productNameInput" placeholder="例如：复古纯棉卫衣 / 手工陶瓷杯" />
+        </label>
+        <label class="field-group">
+          <span>备注说明（可选）</span>
+          <input type="text" id="productNoteInput" placeholder="拍摄顺序说明或商品 SKU" />
+        </label>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-secondary" id="cancelProductModalBtn">取消</button>
+        <button type="button" class="btn btn-primary" id="saveProductModalBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Media Preview Modal -->
+  <div class="modal-backdrop hidden" id="previewModal">
+    <div class="modal-card modal-wide">
+      <div class="modal-head">
+        <h3 id="previewTitle">素材预览</h3>
+        <button type="button" class="close-btn" id="closePreviewModalBtn">×</button>
+      </div>
+      <div class="modal-body preview-body" id="previewBody"></div>
+    </div>
+  </div>
+
+  <!-- iOS Deployment Guide Modal -->
+  <div class="modal-backdrop hidden" id="guideModal">
+    <div class="modal-card modal-wide">
+      <div class="modal-head">
+        <h3>iPhone iOS 16.2 安装与使用指南（纯巨魔 TrollFools & 越狱双支持）</h3>
+        <button type="button" class="close-btn" id="closeGuideModalBtn">×</button>
+      </div>
+      <div class="modal-body guide-content">
+        <div class="guide-step">
+          <h4>第一步：使用 GitHub Actions 免费云编译 iOS 安装包</h4>
+          <p>将本项目的 <code>vcam-sync-studio</code> 目录推送到你的 GitHub 仓库后，进入仓库 <strong>Actions</strong> 页面，运行 <code>Build iOS 16.2 Artifacts</code>，即可自动下载产物：</p>
+          <ul>
+            <li><code>VCamSync.tipa</code> —— 手机端同步控制 App（巨魔商店直接安装）</li>
+            <li><code>VCamHook.dylib</code> —— 纯巨魔 TrollFools 注入用虚拟相机插件</li>
+            <li><code>VCamTweak-rootless.deb</code> —— 方案 B 越狱环境（Dopamine rootless）安装包</li>
+          </ul>
+        </div>
+
+        <div class="guide-step">
+          <h4>第二步 A：纯巨魔（TrollStore + TrollFools）安装法</h4>
+          <ol>
+            <li>用 iPhone 的 <strong>TrollStore（巨魔商店）</strong> 安装 <code>VCamSync.tipa</code>。</li>
+            <li>打开 <strong>TrollFools</strong>，选择需要替换相机画面的目标 App，注入 <code>VCamHook.dylib</code>。</li>
+            <li>打开 <strong>VCamSync</strong>，点击「扫码配对」扫描右侧二维码（或点「搜索局域网电脑」），再进入「选择目标 App」勾选刚才注入的 App。</li>
+          </ol>
+        </div>
+
+        <div class="guide-step">
+          <h4>第二步 B：越狱环境（Dopamine / Rootless iOS 16.2）安装法</h4>
+          <ol>
+            <li>用 Sileo / Zebra / Filza 安装 <code>VCamTweak-rootless.deb</code> 并注销（Respring）。</li>
+            <li>用 TrollStore 安装 <code>VCamSync.tipa</code>，打开后扫码连接电脑即可自动对手机内相机生效。</li>
+          </ol>
+        </div>
+
+        <div class="guide-step">
+          <h4>第三步：日常拍摄流程</h4>
+          <ul>
+            <li><strong>点击拍摄</strong>：每次拍照自动输出「照片队列」的当前第 N 张图，完成后自动推进到下一张并同步给电脑端显示。</li>
+            <li><strong>长按录制</strong>：触发录像时实时切换为「视频队列」里的视频画面，松手停止后自动替换为完整视频。</li>
+            <li><strong>网络提示</strong>：若手机搜不到电脑，请保持同一 Wi-Fi 并以管理员运行一次电脑端目录的 <code>allow_firewall_windows.bat</code> 放行 <code>18760 / 18766</code> 端口。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

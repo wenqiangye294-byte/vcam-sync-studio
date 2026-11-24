@@ -1,0 +1,8 @@
+Package: com.vcamsync.tweak
+Name: VCamSync Virtual Camera Hook
+Version: 1.0.0
+Architecture: iphoneos-arm64
+Description: Virtual camera output replacement for iOS 16.2 (photo queue and long-press video replacement synced from PC).
+Maintainer: VCamSync
+Author: VCamSync
+Section: Tweaks
