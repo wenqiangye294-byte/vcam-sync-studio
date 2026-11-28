@@ -2,6 +2,7 @@
 #import "../shared/VCamProtocol.h"
 #import <arpa/inet.h>
 #import <netinet/in.h>
+#import <string.h>
 #import <sys/socket.h>
 #import <unistd.h>
 

@@ -7,6 +7,6 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = VCamTweak
 VCamTweak_FILES = VCamHookEntry.m VCamAVFoundationHook.m VCamMediaRenderer.m VCamQueueStore.m VCamFloatingHUD.m
 VCamTweak_CFLAGS = -fobjc-arc -I../shared
-VCamTweak_FRAMEWORKS = Foundation UIKit AVFoundation CoreMedia CoreVideo CoreImage ImageIO QuartzCore
+VCamTweak_FRAMEWORKS = Foundation UIKit AVFoundation CoreMedia CoreVideo CoreImage CoreGraphics ImageIO QuartzCore
 
 include $(THEOS_MAKE_PATH)/tweak.mk

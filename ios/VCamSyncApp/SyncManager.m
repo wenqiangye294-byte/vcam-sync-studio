@@ -4,7 +4,9 @@
 #import <CommonCrypto/CommonDigest.h>
 #import <UIKit/UIKit.h>
 #import <arpa/inet.h>
+#import <math.h>
 #import <netinet/in.h>
+#import <string.h>
 #import <sys/select.h>
 #import <sys/socket.h>
 #import <unistd.h>

@@ -36,6 +36,7 @@ FRAMEWORKS=(
   -framework CoreMedia
   -framework CoreVideo
   -framework CoreImage
+  -framework CoreGraphics
   -framework ImageIO
   -framework QuartzCore
 )
